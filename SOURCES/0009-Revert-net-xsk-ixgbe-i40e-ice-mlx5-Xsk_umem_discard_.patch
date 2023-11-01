@@ -1,0 +1,38 @@
+From e2de902ac6504aa7f55f4f0a6d918fb897494889 Mon Sep 17 00:00:00 2001
+From: Eugene Syromiatnikov <esyr@redhat.com>
+Date: Thu, 27 Aug 2020 19:22:54 +0200
+Subject: [PATCH 9/9] Revert "[net] xsk: ixgbe: i40e: ice: mlx5:
+ Xsk_umem_discard_addr to xsk_umem_release_addr"
+
+This reverts commit 82059837017b623b919a5f01059dbcda667dbe5d.
+---
+ drivers/net/ethernet/intel/i40e/i40e_xsk.c          |  4 ++--
+ drivers/net/ethernet/intel/ice/ice_xsk.c            |  4 ++--
+ drivers/net/ethernet/intel/ixgbe/ixgbe_xsk.c        |  4 ++--
+ drivers/net/ethernet/mellanox/mlx5/core/en/xsk/rx.c |  2 +-
+ include/net/xdp_sock.h                              | 10 +++++-----
+ net/xdp/xsk.c                                       |  4 ++--
+ 6 files changed, 14 insertions(+), 14 deletions(-)
+
+Index: src/drivers/net/ethernet/intel/ice/ice_xsk.c
+===================================================================
+--- src.orig/drivers/net/ethernet/intel/ice/ice_xsk.c	2020-08-27 19:23:52.371064612 +0200
++++ src/drivers/net/ethernet/intel/ice/ice_xsk.c	2020-08-27 19:23:52.380064621 +0200
+@@ -556,7 +556,7 @@
+ 
+ 	rx_buf->handle = handle + umem->headroom;
+ 
+-	xsk_umem_release_addr(umem);
++	xsk_umem_discard_addr(umem);
+ 	return true;
+ }
+ 
+@@ -592,7 +592,7 @@
+ 
+ 	rx_buf->handle = handle + umem->headroom;
+ 
+-	xsk_umem_release_addr_rq(umem);
++	xsk_umem_discard_addr_rq(umem);
+ 	return true;
+ }
+ 

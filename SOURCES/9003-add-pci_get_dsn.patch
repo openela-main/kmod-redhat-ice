@@ -1,0 +1,71 @@
+Index: src/drivers/net/ethernet/intel/ice/ice_backport_compat.h
+===================================================================
+--- src.orig/drivers/net/ethernet/intel/ice/ice_backport_compat.h	2020-08-27 19:25:24.269152253 +0200
++++ src/drivers/net/ethernet/intel/ice/ice_backport_compat.h	2020-08-27 23:44:51.384511148 +0200
+@@ -1,5 +1,40 @@
+ #ifndef ICE_BACKPORT_COMPAT_H
+ #define ICE_BACKPORT_COMPAT_H
+ 
++#include <linux/pci.h>
++
++/**
++ * pci_get_dsn - Read and return the 8-byte Device Serial Number
++ * @dev: PCI device to query
++ *
++ * Looks up the PCI_EXT_CAP_ID_DSN and reads the 8 bytes of the Device Serial
++ * Number.
++ *
++ * Returns the DSN, or zero if the capability does not exist.
++ */
++static inline u64 pci_get_dsn(struct pci_dev *dev)
++{
++	u32 dword;
++	u64 dsn;
++	int pos;
++
++	pos = pci_find_ext_capability(dev, PCI_EXT_CAP_ID_DSN);
++	if (!pos)
++		return 0;
++
++	/*
++	 * The Device Serial Number is two dwords offset 4 bytes from the
++	 * capability position. The specification says that the first dword is
++	 * the lower half, and the second dword is the upper half.
++	 */
++	pos += 4;
++	pci_read_config_dword(dev, pos, &dword);
++	dsn = (u64)dword;
++	pci_read_config_dword(dev, pos + 4, &dword);
++	dsn |= ((u64)dword) << 32;
++
++	return dsn;
++}
++
+ 
+ #endif /* ICE_BACKPORT_COMPAT_H */
+Index: src/drivers/net/ethernet/intel/ice/ice_main.c
+===================================================================
+--- src.orig/drivers/net/ethernet/intel/ice/ice_main.c	2020-08-27 19:25:24.221152207 +0200
++++ src/drivers/net/ethernet/intel/ice/ice_main.c	2020-08-27 23:41:52.364425785 +0200
+@@ -13,6 +13,8 @@
+ #include "ice_dcb_nl.h"
+ #include "ice_devlink.h"
+ 
++#include "ice_backport_compat.h"
++
+ #define DRV_VERSION_MAJOR 0
+ #define DRV_VERSION_MINOR 8
+ #define DRV_VERSION_BUILD 2
+Index: src/drivers/net/ethernet/intel/ice/ice_devlink.c
+===================================================================
+--- src.orig/drivers/net/ethernet/intel/ice/ice_devlink.c	2020-08-27 19:25:23.959151957 +0200
++++ src/drivers/net/ethernet/intel/ice/ice_devlink.c	2020-08-27 19:25:24.319152301 +0200
+@@ -5,6 +5,8 @@
+ #include "ice_lib.h"
+ #include "ice_devlink.h"
+ 
++#include "ice_backport_compat.h"
++
+ static int ice_info_get_dsn(struct ice_pf *pf, char *buf, size_t len)
+ {
+ 	u8 dsn[8];

@@ -1,0 +1,13 @@
+Index: src/drivers/net/ethernet/intel/ice/ice_main.c
+===================================================================
+--- src.orig/drivers/net/ethernet/intel/ice/ice_main.c	2020-08-27 18:16:01.011305817 +0200
++++ src/drivers/net/ethernet/intel/ice/ice_main.c	2020-08-27 18:38:23.737500241 +0200
+@@ -19,7 +19,7 @@
+ 
+ #define DRV_VERSION	__stringify(DRV_VERSION_MAJOR) "." \
+ 			__stringify(DRV_VERSION_MINOR) "." \
+-			__stringify(DRV_VERSION_BUILD) "-k"
++			__stringify(DRV_VERSION_BUILD) "-k_dup8.2"
+ #define DRV_SUMMARY	"Intel(R) Ethernet Connection E800 Series Linux Driver"
+ const char ice_drv_ver[] = DRV_VERSION;
+ static const char ice_driver_string[] = DRV_SUMMARY;

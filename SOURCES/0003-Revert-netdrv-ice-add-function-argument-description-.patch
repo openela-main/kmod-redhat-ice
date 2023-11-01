@@ -1,0 +1,26 @@
+From 8ca75fae142a8de76d62a8b2249f21590d7201a8 Mon Sep 17 00:00:00 2001
+From: Eugene Syromiatnikov <esyr@redhat.com>
+Date: Thu, 27 Aug 2020 19:09:53 +0200
+Subject: [PATCH 3/5] Revert "[netdrv] ice: add function argument description
+ to function header comment"
+
+This reverts commit de409a958a600e1edaba3b771ab70b1762ca842c.
+---
+ drivers/net/ethernet/intel/ice/ice_main.c | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/drivers/net/ethernet/intel/ice/ice_main.c b/drivers/net/ethernet/intel/ice/ice_main.c
+index b6e5dc22f97f..4853a1e0632c 100644
+--- a/drivers/net/ethernet/intel/ice/ice_main.c
++++ b/drivers/net/ethernet/intel/ice/ice_main.c
+@@ -5440,7 +5440,6 @@ ice_bridge_setlink(struct net_device *dev, struct nlmsghdr *nlh,
+ /**
+  * ice_tx_timeout - Respond to a Tx Hang
+  * @netdev: network interface device structure
+- * @txqueue: Tx queue
+  */
+ static void ice_tx_timeout(struct net_device *netdev, unsigned int txqueue)
+ {
+-- 
+2.13.6
+
