@@ -1,0 +1,13 @@
+Index: src/drivers/net/ethernet/intel/ice/ice_main.c
+===================================================================
+--- src.orig/drivers/net/ethernet/intel/ice/ice_main.c	2020-08-27 23:46:40.953573593 +0200
++++ src/drivers/net/ethernet/intel/ice/ice_main.c	2020-08-27 23:46:40.975573609 +0200
+@@ -5770,7 +5770,7 @@
+ 	.ndo_tx_timeout = ice_tx_timeout,
+ 	.ndo_bpf = ice_xdp,
+ 	.ndo_xdp_xmit = ice_xdp_xmit,
+-	.ndo_xsk_wakeup = ice_xsk_wakeup,
++	/* .ndo_xsk_wakeup = ice_xsk_wakeup, */
+ 	.ndo_udp_tunnel_add = ice_udp_tunnel_add,
+ 	.ndo_udp_tunnel_del = ice_udp_tunnel_del,
+ };

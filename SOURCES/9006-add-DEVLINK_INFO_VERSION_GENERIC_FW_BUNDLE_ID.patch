@@ -1,0 +1,12 @@
+Index: src/drivers/net/ethernet/intel/ice/ice_backport_compat.h
+===================================================================
+--- src.orig/drivers/net/ethernet/intel/ice/ice_backport_compat.h	2020-08-27 23:46:58.998586500 +0200
++++ src/drivers/net/ethernet/intel/ice/ice_backport_compat.h	2020-08-27 23:47:13.889597151 +0200
+@@ -80,4 +80,7 @@
+ 	return 0;
+ }
+ 
++
++#define DEVLINK_INFO_VERSION_GENERIC_FW_BUNDLE_ID "fw.bundle_id"
++
+ #endif /* ICE_BACKPORT_COMPAT_H */

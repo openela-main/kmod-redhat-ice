@@ -1,0 +1,175 @@
+From 1b267d3510d8ee9ab46ec4101ee481cda310cf8b Mon Sep 17 00:00:00 2001
+From: Eugene Syromiatnikov <esyr@redhat.com>
+Date: Thu, 27 Aug 2020 19:15:44 +0200
+Subject: [PATCH 6/6] Revert "[netdrv] ice: add a devlink region for dumping
+ NVM contents"
+
+This reverts commit 14d67603e80fde05381c96562be7f191d568237f.
+---
+ drivers/net/ethernet/intel/ice/ice.h         |  2 -
+ drivers/net/ethernet/intel/ice/ice_devlink.c | 96 ----------------------------
+ drivers/net/ethernet/intel/ice/ice_devlink.h |  3 -
+ drivers/net/ethernet/intel/ice/ice_main.c    |  4 --
+ 4 files changed, 105 deletions(-)
+
+diff --git a/drivers/net/ethernet/intel/ice/ice.h b/drivers/net/ethernet/intel/ice/ice.h
+index 5792ee616b5c..54b9d567841e 100644
+--- a/drivers/net/ethernet/intel/ice/ice.h
++++ b/drivers/net/ethernet/intel/ice/ice.h
+@@ -373,8 +373,6 @@ struct ice_pf {
+ 	/* devlink port data */
+ 	struct devlink_port devlink_port;
+ 
+-	struct devlink_region *nvm_region;
+-
+ 	/* OS reserved IRQ details */
+ 	struct msix_entry *msix_entries;
+ 	struct ice_res_tracker *irq_tracker;
+diff --git a/drivers/net/ethernet/intel/ice/ice_devlink.c b/drivers/net/ethernet/intel/ice/ice_devlink.c
+index a73d06e06b5d..fafec5c6b407 100644
+--- a/drivers/net/ethernet/intel/ice/ice_devlink.c
++++ b/drivers/net/ethernet/intel/ice/ice_devlink.c
+@@ -341,99 +341,3 @@ void ice_devlink_destroy_port(struct ice_pf *pf)
+ 	devlink_port_type_clear(&pf->devlink_port);
+ 	devlink_port_unregister(&pf->devlink_port);
+ }
+-
+-/**
+- * ice_devlink_nvm_snapshot - Capture a snapshot of the Shadow RAM contents
+- * @devlink: the devlink instance
+- * @extack: extended ACK response structure
+- * @data: on exit points to snapshot data buffer
+- *
+- * This function is called in response to the DEVLINK_CMD_REGION_TRIGGER for
+- * the shadow-ram devlink region. It captures a snapshot of the shadow ram
+- * contents. This snapshot can later be viewed via the devlink-region
+- * interface.
+- *
+- * @returns zero on success, and updates the data pointer. Returns a non-zero
+- * error code on failure.
+- */
+-static int ice_devlink_nvm_snapshot(struct devlink *devlink,
+-				    struct netlink_ext_ack *extack, u8 **data)
+-{
+-	struct ice_pf *pf = devlink_priv(devlink);
+-	struct device *dev = ice_pf_to_dev(pf);
+-	struct ice_hw *hw = &pf->hw;
+-	enum ice_status status;
+-	void *nvm_data;
+-	u32 nvm_size;
+-
+-	nvm_size = hw->nvm.flash_size;
+-	nvm_data = vzalloc(nvm_size);
+-	if (!nvm_data)
+-		return -ENOMEM;
+-
+-	status = ice_acquire_nvm(hw, ICE_RES_READ);
+-	if (status) {
+-		dev_dbg(dev, "ice_acquire_nvm failed, err %d aq_err %d\n",
+-			status, hw->adminq.sq_last_status);
+-		NL_SET_ERR_MSG_MOD(extack, "Failed to acquire NVM semaphore");
+-		vfree(nvm_data);
+-		return -EIO;
+-	}
+-
+-	status = ice_read_flat_nvm(hw, 0, &nvm_size, nvm_data, false);
+-	if (status) {
+-		dev_dbg(dev, "ice_read_flat_nvm failed after reading %u bytes, err %d aq_err %d\n",
+-			nvm_size, status, hw->adminq.sq_last_status);
+-		NL_SET_ERR_MSG_MOD(extack, "Failed to read NVM contents");
+-		ice_release_nvm(hw);
+-		vfree(nvm_data);
+-		return -EIO;
+-	}
+-
+-	ice_release_nvm(hw);
+-
+-	*data = nvm_data;
+-
+-	return 0;
+-}
+-
+-static const struct devlink_region_ops ice_nvm_region_ops = {
+-	.name = "nvm-flash",
+-	.destructor = vfree,
+-	.snapshot = ice_devlink_nvm_snapshot,
+-};
+-
+-/**
+- * ice_devlink_init_regions - Initialize devlink regions
+- * @pf: the PF device structure
+- *
+- * Create devlink regions used to enable access to dump the contents of the
+- * flash memory on the device.
+- */
+-void ice_devlink_init_regions(struct ice_pf *pf)
+-{
+-	struct devlink *devlink = priv_to_devlink(pf);
+-	struct device *dev = ice_pf_to_dev(pf);
+-	u64 nvm_size;
+-
+-	nvm_size = pf->hw.nvm.flash_size;
+-	pf->nvm_region = devlink_region_create(devlink, &ice_nvm_region_ops, 1,
+-					       nvm_size);
+-	if (IS_ERR(pf->nvm_region)) {
+-		dev_err(dev, "failed to create NVM devlink region, err %ld\n",
+-			PTR_ERR(pf->nvm_region));
+-		pf->nvm_region = NULL;
+-	}
+-}
+-
+-/**
+- * ice_devlink_destroy_regions - Destroy devlink regions
+- * @pf: the PF device structure
+- *
+- * Remove previously created regions for this PF.
+- */
+-void ice_devlink_destroy_regions(struct ice_pf *pf)
+-{
+-	if (pf->nvm_region)
+-		devlink_region_destroy(pf->nvm_region);
+-}
+diff --git a/drivers/net/ethernet/intel/ice/ice_devlink.h b/drivers/net/ethernet/intel/ice/ice_devlink.h
+index 6e806a08dc23..f94dc93c24c5 100644
+--- a/drivers/net/ethernet/intel/ice/ice_devlink.h
++++ b/drivers/net/ethernet/intel/ice/ice_devlink.h
+@@ -11,7 +11,4 @@ void ice_devlink_unregister(struct ice_pf *pf);
+ int ice_devlink_create_port(struct ice_pf *pf);
+ void ice_devlink_destroy_port(struct ice_pf *pf);
+ 
+-void ice_devlink_init_regions(struct ice_pf *pf);
+-void ice_devlink_destroy_regions(struct ice_pf *pf);
+-
+ #endif /* _ICE_DEVLINK_H_ */
+diff --git a/drivers/net/ethernet/intel/ice/ice_main.c b/drivers/net/ethernet/intel/ice/ice_main.c
+index 2b02506d0840..1deffd909a13 100644
+--- a/drivers/net/ethernet/intel/ice/ice_main.c
++++ b/drivers/net/ethernet/intel/ice/ice_main.c
+@@ -3391,8 +3391,6 @@ ice_probe(struct pci_dev *pdev, const struct pci_device_id __always_unused *ent)
+ 		goto err_init_pf_unroll;
+ 	}
+ 
+-	ice_devlink_init_regions(pf);
+-
+ 	pf->num_alloc_vsi = hw->func_caps.guar_num_vsi;
+ 	if (!pf->num_alloc_vsi) {
+ 		err = -EIO;
+@@ -3506,7 +3504,6 @@ ice_probe(struct pci_dev *pdev, const struct pci_device_id __always_unused *ent)
+ 	devm_kfree(dev, pf->vsi);
+ err_init_pf_unroll:
+ 	ice_deinit_pf(pf);
+-	ice_devlink_destroy_regions(pf);
+ 	ice_deinit_hw(hw);
+ err_exit_unroll:
+ 	ice_devlink_unregister(pf);
+@@ -3552,7 +3549,6 @@ static void ice_remove(struct pci_dev *pdev)
+ 		ice_vsi_free_q_vectors(pf->vsi[i]);
+ 	}
+ 	ice_deinit_pf(pf);
+-	ice_devlink_destroy_regions(pf);
+ 	ice_deinit_hw(&pf->hw);
+ 	ice_devlink_unregister(pf);
+ 
+-- 
+2.13.6
+

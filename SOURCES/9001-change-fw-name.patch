@@ -1,0 +1,13 @@
+Index: src/drivers/net/ethernet/intel/ice/ice_main.c
+===================================================================
+--- src.orig/drivers/net/ethernet/intel/ice/ice_main.c	2020-08-27 18:38:23.737500241 +0200
++++ src/drivers/net/ethernet/intel/ice/ice_main.c	2020-08-27 18:39:16.839544553 +0200
+@@ -27,7 +27,7 @@
+ 
+ /* DDP Package file located in firmware search paths (e.g. /lib/firmware/) */
+ #define ICE_DDP_PKG_PATH	"intel/ice/ddp/"
+-#define ICE_DDP_PKG_FILE	ICE_DDP_PKG_PATH "ice.pkg"
++#define ICE_DDP_PKG_FILE	ICE_DDP_PKG_PATH "ice-1.3.4.0_dup8.2.pkg"
+ 
+ MODULE_AUTHOR("Intel Corporation, <linux.nics@intel.com>");
+ MODULE_DESCRIPTION(DRV_SUMMARY);

@@ -1,0 +1,52 @@
+Index: src/drivers/net/ethernet/intel/ice/ice_backport_compat.h
+===================================================================
+--- src.orig/drivers/net/ethernet/intel/ice/ice_backport_compat.h	2020-08-27 23:41:54.067426597 +0200
++++ src/drivers/net/ethernet/intel/ice/ice_backport_compat.h	2020-08-27 23:44:20.729496531 +0200
+@@ -37,4 +37,47 @@
+ }
+ 
+ 
++static inline struct pci_bus *find_pci_root_bus_dup(struct pci_bus *bus)
++{
++	while (bus->parent)
++		bus = bus->parent;
++
++	return bus;
++}
++
++static inline struct pci_host_bridge *pci_find_host_bridge_dup(struct pci_bus *bus)
++{
++	struct pci_bus *root_bus = find_pci_root_bus_dup(bus);
++
++	return to_pci_host_bridge(root_bus->bridge);
++}
++
++static inline int pcie_aer_is_native(struct pci_dev *dev)
++{
++	struct pci_host_bridge *host = pci_find_host_bridge_dup(dev->bus);
++
++	if (!dev->aer_cap)
++		return 0;
++
++	return /* pcie_ports_native || */ host->native_aer;
++}
++
++static inline int pci_aer_clear_nonfatal_status(struct pci_dev *dev)
++{
++	int aer = dev->aer_cap;
++	u32 status, sev;
++
++	if (!pcie_aer_is_native(dev))
++		return -EIO;
++
++	/* Clear status bits for ERR_NONFATAL errors only */
++	pci_read_config_dword(dev, aer + PCI_ERR_UNCOR_STATUS, &status);
++	pci_read_config_dword(dev, aer + PCI_ERR_UNCOR_SEVER, &sev);
++	status &= ~sev;
++	if (status)
++		pci_write_config_dword(dev, aer + PCI_ERR_UNCOR_STATUS, status);
++
++	return 0;
++}
++
+ #endif /* ICE_BACKPORT_COMPAT_H */
